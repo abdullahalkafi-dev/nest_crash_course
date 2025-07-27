@@ -1,5 +1,14 @@
-import { Body, Controller, Delete, Get, Param, Post, Put } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Post,
+  Put,
+} from '@nestjs/common';
 import { data, ReportType, TReport } from 'src/data';
+import { v4 as uuid } from 'uuid';
 @Controller('report/:type')
 export class AppController {
   @Get('')
@@ -20,8 +29,8 @@ export class AppController {
   getReportById(@Param('type') type: string, @Param('id') id: string) {
     if (!(type === ReportType.EXPENSE || type === ReportType.INCOME)) {
       throw new Error('Only Expense or income is acceptable');
-    } 
-    const reports = data.report
+    }
+    const report = data.report
       .filter((d) => {
         if (type == ReportType.EXPENSE) {
           return d.type == ReportType.EXPENSE;
@@ -30,27 +39,53 @@ export class AppController {
         }
       })
       .find((d) => d.id == id);
-    return reports;
+    return report;
   }
 
   @Post()
   createReport(
-    @Body() body:Partial<TReport>,@Param("type") type:string
+    @Body() body: Partial<TReport>,
+    @Param('type') type: 'income' | 'expense',
   ) {
-    if(!body || !body.amount || !body.source){
-      throw new Error("no no ")
+    if (!body || !body.amount || !body.source) {
+      throw new Error('no no ');
     }
- const data:TReport ={
-amount:body.amount,
-source:body.source,
-
-
- }
-    
+    const info: TReport = {
+      id: uuid(),
+      amount: body.amount,
+      source: body.source,
+      created_at: new Date(),
+      updated_at: new Date(),
+      type: type,
+    };
+    data.report.push(info);
+    return info;
   }
   @Put(':id')
-  updateReport() {
-    return { message: 'Report updated' };
+  updateReport(
+    @Param('id') id: string,
+    @Param('type') type: 'income' | 'expense',
+    @Body() body: Partial<TReport>,
+  ) {
+    if (!(type === ReportType.EXPENSE || type === ReportType.INCOME)) {
+      throw new Error('Only Expense or income is acceptable');
+    }
+    const report = data.report
+      .filter((d) => {
+        if (type == ReportType.EXPENSE) {
+          return d.type == ReportType.EXPENSE;
+        } else {
+          return d.type == ReportType.INCOME;
+        }
+      })
+      .find((d) => d.id == id);
+      console.log(report);
+    if (!report) {
+      return 'No data Found';
+    }
+   const index =data.report.findIndex(d=>d.id ==report.id)
+   data.report[index]={...data.report[index],...body}
+   return data.report[index]
   }
   @Delete(':id')
   deleteReport() {
